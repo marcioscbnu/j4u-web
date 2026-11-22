@@ -1,65 +1,112 @@
-"use client";
+'use client';
 
-import React, { createContext, useContext, useEffect, useState } from "react";
-import { User } from "@supabase/supabase-js";
-import { supabase } from "@/lib/supabase";
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { User } from '@supabase/supabase-js';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
-const ADMIN_EMAIL = "j4umarketplace@gmail.com";
-
-interface AuthContextData {
+interface AuthContextValue {
   user: User | null;
   isAdmin: boolean;
   loading: boolean;
-  loginAdmin: (email: string, pass: string) => Promise<void>;
-  logoutAdmin: () => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
+  signOut: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextData>({} as AuthContextData);
+const AuthContext = createContext<AuthContextValue>({
+  user: null,
+  isAdmin: false,
+  loading: true,
+  signIn: async () => {},
+  signOut: async () => {},
+});
+
+const FALLBACK_ADMINS = ['j4umarketplace@gmail.com'];
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  const verificarAdmin = async (currentUser: User | null) => {
+    if (!currentUser || !currentUser.email) {
+      setIsAdmin(false);
+      return;
+    }
+
+    const emailLower = currentUser.email.toLowerCase();
+    if (FALLBACK_ADMINS.includes(emailLower)) {
+      setIsAdmin(true);
+      return;
+    }
+
+    if (!supabase) {
+      setIsAdmin(false);
+      return;
+    }
+
+    const { data } = await supabase
+      .from('admin_users')
+      .select('email')
+      .eq('email', emailLower)
+      .maybeSingle();
+
+    setIsAdmin(Boolean(data));
+  };
+
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
+    if (!isSupabaseConfigured() || !supabase) {
       setLoading(false);
+      return;
+    }
+
+    let active = true;
+
+    supabase.auth.getSession().then(async ({ data }) => {
+      if (!active) return;
+      const currentUser = data.session?.user ?? null;
+      setUser(currentUser);
+      await verificarAdmin(currentUser);
+      if (active) setLoading(false);
     });
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        const currentUser = session?.user ?? null;
+        setUser(currentUser);
+        await verificarAdmin(currentUser);
+        setLoading(false);
+      }
+    );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      active = false;
+      listener.subscription.unsubscribe();
+    };
   }, []);
 
-  const loginAdmin = async (email: string, pass: string) => {
-    if (email.trim().toLowerCase() !== ADMIN_EMAIL) {
-      throw new Error("Este e-mail não possui permissão de administrador.");
-    }
+  const signIn = async (email: string, password: string) => {
+    if (!supabase) throw new Error('Supabase não configurado no .env.local.');
     const { error } = await supabase.auth.signInWithPassword({
       email: email.trim(),
-      password: pass,
+      password,
     });
-    if (error) {
-      throw new Error(error.message);
-    }
+    if (error) throw new Error(error.message);
   };
 
-  const logoutAdmin = async () => {
+  const signOut = async () => {
+    if (!supabase) return;
     await supabase.auth.signOut();
+    setUser(null);
+    setIsAdmin(false);
   };
-
-  const isAdmin = Boolean(user && user.email?.toLowerCase() === ADMIN_EMAIL);
 
   return (
-    <AuthContext.Provider value={{ user, isAdmin, loading, loginAdmin, logoutAdmin }}>
+    <AuthContext.Provider value={{ user, isAdmin, loading, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
-export const useAuth = () => useContext(AuthContext);
+export function useAuth() {
+  return useContext(AuthContext);
+}

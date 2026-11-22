@@ -2,7 +2,59 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  background-color: #020617;
-  color: #f8fafc;
+@keyframes auroraShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes shimmerSweep {
+  0% {
+    transform: translateX(-120%) skewX(-20deg);
+  }
+  100% {
+    transform: translateX(220%) skewX(-20deg);
+  }
+}
+
+@keyframes floatGlow {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateY(-12px) scale(1.05);
+    opacity: 0.8;
+  }
+}
+
+.animate-aurora {
+  background-size: 300% 300%;
+  animation: auroraShift 9s ease infinite;
+}
+
+.animate-shimmer {
+  animation: shimmerSweep 2.6s infinite;
+}
+
+.animate-float-glow {
+  animation: floatGlow 6s ease-in-out infinite;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #000000;
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #38bdf8, #818cf8, #f472b6);
+  border-radius: 9999px;
 }

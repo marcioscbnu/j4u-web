@@ -1,14 +1,15 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
-import { AuthProvider } from "@/context/AuthContext";
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import './globals.css';
+import { AuthProvider } from '@/context/AuthContext';
+import { ThemeProvider } from '@/context/ThemeContext';
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: "J4U Marketplace | Curadoria Inteligente de Ofertas",
+  title: 'J4U Marketplace • Achados Shopee e Mercado Livre',
   description:
-    "As melhores ofertas selecionadas diariamente da Shopee e Mercado Livre pelo @j4umarketplace.",
+    'Curadoria diária com as melhores ofertas do Mercado Livre e Shopee só para você.',
 };
 
 export default function RootLayout({
@@ -17,9 +18,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="pt-BR">
-      <body className={`${inter.className} bg-slate-950 text-slate-100 antialiased`}>
-        <AuthProvider>{children}</AuthProvider>
+    <html lang="pt-BR" className="dark">
+      <body className={`${inter.className} bg-black text-white antialiased`}>
+        <ThemeProvider>
+          <AuthProvider>{children}</AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

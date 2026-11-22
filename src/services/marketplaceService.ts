@@ -1,12 +1,37 @@
-import { supabase } from "@/lib/supabase";
-import { Categoria, Oferta } from "@/types/marketplace";
-import { isOfertaExpirada } from "@/utils/offerRules";
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import {
+  Categoria,
+  Oferta,
+  NovaOfertaInput,
+  AtualizarOfertaInput,
+  FornecedorTipo,
+  OfertaStatus,
+} from '@/types/marketplace';
 
-function mapRowToOferta(row: any): Oferta {
-  const expirada = isOfertaExpirada(row.expiracao_iso);
-  const statusEfetivo =
-    expirada && row.status !== "arquivado" ? "arquivado" : row.status;
+interface OfertaRow {
+  id: string;
+  categoria_id: string;
+  fornecedor: FornecedorTipo;
+  cta: string;
+  imagem_url: string;
+  url: string;
+  video_url?: string | null;
+  cadastro: string;
+  expiracao: string;
+  expiracao_iso: string;
+  status: OfertaStatus;
+  cliques: number;
+  created_at?: string;
+}
 
+function formatDateBr(isoDate: string): string {
+  if (!isoDate) return '';
+  const parts = isoDate.split('T')[0].split('-');
+  if (parts.length !== 3) return isoDate;
+  return `${parts[2]}/${parts[1]}/${parts[0]}`;
+}
+
+function mapOfertaFromRow(row: OfertaRow): Oferta {
   return {
     id: row.id,
     categoriaId: row.categoria_id,
@@ -14,132 +39,205 @@ function mapRowToOferta(row: any): Oferta {
     cta: row.cta,
     imagemUrl: row.imagem_url,
     url: row.url,
+    videoUrl: row.video_url || '',
     cadastro: row.cadastro,
     expiracao: row.expiracao,
     expiracaoIso: row.expiracao_iso,
-    status: statusEfetivo,
+    status: row.status,
     cliques: row.cliques ?? 0,
+    createdAt: row.created_at,
   };
 }
 
-export async function fetchCategorias(): Promise<Categoria[]> {
+export async function listarCategorias(): Promise<Categoria[]> {
+  if (!isSupabaseConfigured() || !supabase) return [];
   const { data, error } = await supabase
-    .from("categorias")
-    .select("*")
-    .order("nome", { ascending: true });
+    .from('categorias')
+    .select('*')
+    .order('created_at', { ascending: true });
 
-  if (error) {
-    console.error("Erro ao buscar categorias:", error.message);
-    return [];
-  }
-  return (data || []) as Categoria[];
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    nome: row.nome,
+    icone: row.icone || 'tag',
+    createdAt: row.created_at,
+  }));
 }
 
-export async function fetchOfertas(): Promise<Oferta[]> {
+export async function criarCategoria(nome: string, icone = 'tag'): Promise<Categoria> {
+  if (!supabase) throw new Error('Supabase não configurado.');
   const { data, error } = await supabase
-    .from("ofertas")
-    .select("*")
-    .order("created_at", { ascending: false });
+    .from('categorias')
+    .insert([{ nome: nome.trim(), icone }])
+    .select()
+    .single();
 
-  if (error) {
-    console.error("Erro ao buscar ofertas:", error.message);
-    return [];
+  if (error) throw new Error(error.message);
+  return {
+    id: data.id,
+    nome: data.nome,
+    icone: data.icone,
+    createdAt: data.created_at,
+  };
+}
+
+export async function excluirCategoria(id: string): Promise<void> {
+  if (!supabase) throw new Error('Supabase não configurado.');
+  const { error } = await supabase.from('categorias').delete().eq('id', id);
+  if (error) throw new Error(error.message);
+}
+
+export async function listarOfertas(): Promise<Oferta[]> {
+  if (!isSupabaseConfigured() || !supabase) return [];
+  const { data, error } = await supabase
+    .from('ofertas')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return ((data as OfertaRow[]) ?? []).map(mapOfertaFromRow);
+}
+
+export async function criarOferta(input: NovaOfertaInput): Promise<Oferta> {
+  if (!supabase) throw new Error('Supabase não configurado.');
+  const hojeIso = new Date().toISOString().split('T')[0];
+
+  const payload = {
+    categoria_id: input.categoriaId,
+    fornecedor: input.fornecedor,
+    cta: input.cta.trim(),
+    imagem_url: input.imagemUrl.trim(),
+    url: input.url.trim(),
+    video_url: input.videoUrl?.trim() || '',
+    cadastro: formatDateBr(hojeIso),
+    expiracao: formatDateBr(input.expiracaoIso),
+    expiracao_iso: input.expiracaoIso,
+    status: input.status,
+    cliques: 0,
+  };
+
+  const { data, error } = await supabase
+    .from('ofertas')
+    .insert([payload])
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  return mapOfertaFromRow(data as OfertaRow);
+}
+
+export async function atualizarOferta(id: string, input: AtualizarOfertaInput): Promise<Oferta> {
+  if (!supabase) throw new Error('Supabase não configurado.');
+
+  const payload: Record<string, unknown> = {};
+  if (input.categoriaId !== undefined) payload.categoria_id = input.categoriaId;
+  if (input.fornecedor !== undefined) payload.fornecedor = input.fornecedor;
+  if (input.cta !== undefined) payload.cta = input.cta.trim();
+  if (input.imagemUrl !== undefined) payload.imagem_url = input.imagemUrl.trim();
+  if (input.url !== undefined) payload.url = input.url.trim();
+  if (input.videoUrl !== undefined) payload.video_url = input.videoUrl.trim();
+  if (input.status !== undefined) payload.status = input.status;
+  if (input.expiracaoIso !== undefined) {
+    payload.expiracao_iso = input.expiracaoIso;
+    payload.expiracao = formatDateBr(input.expiracaoIso);
   }
-  return (data || []).map(mapRowToOferta);
+
+  const { data, error } = await supabase
+    .from('ofertas')
+    .update(payload)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  return mapOfertaFromRow(data as OfertaRow);
 }
 
-export function subscribeCategorias(callback: (categorias: Categoria[]) => void) {
-  fetchCategorias().then(callback);
-
-  const channel = supabase
-    .channel("categorias-realtime")
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "categorias" },
-      () => {
-        fetchCategorias().then(callback);
-      }
-    )
-    .subscribe();
-
-  return () => {
-    supabase.removeChannel(channel);
-  };
-}
-
-export function subscribeOfertas(callback: (ofertas: Oferta[]) => void) {
-  fetchOfertas().then(callback);
-
-  const channel = supabase
-    .channel("ofertas-realtime")
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "ofertas" },
-      () => {
-        fetchOfertas().then(callback);
-      }
-    )
-    .subscribe();
-
-  return () => {
-    supabase.removeChannel(channel);
-  };
-}
-
-export async function criarCategoria(nome: string, icone: string) {
-  const { error } = await supabase.from("categorias").insert([{ nome, icone }]);
+export async function excluirOferta(id: string): Promise<void> {
+  if (!supabase) throw new Error('Supabase não configurado.');
+  const { error } = await supabase.from('ofertas').delete().eq('id', id);
   if (error) throw new Error(error.message);
 }
 
-export async function atualizarCategoria(id: string, nome: string, icone: string) {
-  const { error } = await supabase
-    .from("categorias")
-    .update({ nome, icone })
-    .eq("id", id);
-  if (error) throw new Error(error.message);
-}
-
-export async function excluirCategoria(id: string) {
-  const { error } = await supabase.from("categorias").delete().eq("id", id);
-  if (error) throw new Error(error.message);
-}
-
-export async function criarOferta(oferta: Omit<Oferta, "id" | "cliques">) {
-  const { error } = await supabase.from("ofertas").insert([
-    {
-      categoria_id: oferta.categoriaId,
-      fornecedor: oferta.fornecedor,
-      cta: oferta.cta,
-      imagem_url: oferta.imagemUrl,
-      url: oferta.url,
-      cadastro: oferta.cadastro,
-      expiracao: oferta.expiracao,
-      expiracao_iso: oferta.expiracaoIso,
-      status: oferta.status,
-      cliques: 0,
-    },
-  ]);
-  if (error) throw new Error(error.message);
-}
-
-export async function atualizarStatusOferta(id: string, status: Oferta["status"]) {
-  const { error } = await supabase
-    .from("ofertas")
-    .update({ status })
-    .eq("id", id);
-  if (error) throw new Error(error.message);
-}
-
-export async function excluirOferta(id: string) {
-  const { error } = await supabase.from("ofertas").delete().eq("id", id);
-  if (error) throw new Error(error.message);
-}
-
-export async function registrarCliqueOferta(id: string) {
-  const { error } = await supabase.rpc("incrementar_clique_oferta", {
-    oferta_id: id,
+export async function registrarCliqueOferta(ofertaId: string): Promise<void> {
+  if (!supabase) return;
+  const { error } = await supabase.rpc('incrementar_clique_oferta', {
+    oferta_id: ofertaId,
   });
   if (error) {
-    console.error("Erro ao incrementar clique:", error.message);
+    console.error('Erro ao registrar clique:', error.message);
   }
 }
+
+export function subscribeCategorias(
+  onChange: (categorias: Categoria[]) => void
+): () => void {
+  if (!isSupabaseConfigured() || !supabase) return () => {};
+
+  const syncCategorias = async () => {
+    try {
+      const lista = await listarCategorias();
+      onChange(lista);
+    } catch (err) {
+      console.error('Erro ao sincronizar categorias:', err);
+    }
+  };
+
+  void syncCategorias();
+
+  const channel = supabase
+    .channel('j4u-categorias-realtime')
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'categorias' },
+      () => {
+        void syncCategorias();
+      }
+    )
+    .subscribe();
+
+  return () => {
+    if (supabase) {
+      void supabase.removeChannel(channel);
+    }
+  };
+}
+
+export function subscribeOfertas(
+  onChange: (ofertas: Oferta[]) => void
+): () => void {
+  if (!isSupabaseConfigured() || !supabase) return () => {};
+
+  const syncOfertas = async () => {
+    try {
+      const lista = await listarOfertas();
+      onChange(lista);
+    } catch (err) {
+      console.error('Erro ao sincronizar ofertas:', err);
+    }
+  };
+
+  void syncOfertas();
+
+  const channel = supabase
+    .channel('j4u-ofertas-realtime')
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'ofertas' },
+      () => {
+        void syncOfertas();
+      }
+    )
+    .subscribe();
+
+  return () => {
+    if (supabase) {
+      void supabase.removeChannel(channel);
+    }
+  };
+}
+
+export const getCategorias = listarCategorias;
+export const getOfertas = listarOfertas;
+export const registrarClique = registrarCliqueOferta;
