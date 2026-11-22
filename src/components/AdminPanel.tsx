@@ -10,13 +10,18 @@ import {
   Image as ImageIcon,
   Link2,
 } from "lucide-react";
-import { Categoria, FornecedorType, Oferta, StatusOfertaType } from "@/types/marketplace";
+import {
+  Categoria,
+  FornecedorTipo,
+  Oferta,
+  OfertaStatus,
+} from "@/types/marketplace";
 import {
   criarCategoria,
   excluirCategoria,
   criarOferta,
   excluirOferta,
-  atualizarStatusOferta,
+  atualizarOferta,
 } from "@/services/marketplaceService";
 import { CATEGORY_ICONS } from "./CategoryBar";
 import { calcularDatasOferta } from "@/utils/offerRules";
@@ -30,11 +35,11 @@ export function AdminPanel({ categorias, ofertas }: AdminPanelProps) {
   const [tab, setTab] = useState<"ofertas" | "categorias" | "relatorios">("ofertas");
 
   const [catId, setCatId] = useState("");
-  const [fornecedor, setFornecedor] = useState<FornecedorType>("mercadolivre");
+  const [fornecedor, setFornecedor] = useState<FornecedorTipo>("mercadolivre");
   const [cta, setCta] = useState("");
   const [imagemUrl, setImagemUrl] = useState("");
   const [url, setUrl] = useState("");
-  const [status, setStatus] = useState<StatusOfertaType>("novo");
+  const [status, setStatus] = useState<OfertaStatus>("novo");
 
   const [novaCatNome, setNovaCatNome] = useState("");
   const [novaCatIcone, setNovaCatIcone] = useState("home");
@@ -52,8 +57,6 @@ export function AdminPanel({ categorias, ofertas }: AdminPanelProps) {
         cta,
         imagemUrl,
         url,
-        cadastro: datas.cadastro,
-        expiracao: datas.expiracao,
         expiracaoIso: datas.expiracaoIso,
         status,
       });
@@ -196,7 +199,7 @@ export function AdminPanel({ categorias, ofertas }: AdminPanelProps) {
                 </label>
                 <select
                   value={fornecedor}
-                  onChange={(e) => setFornecedor(e.target.value as FornecedorType)}
+                  onChange={(e) => setFornecedor(e.target.value as FornecedorTipo)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white outline-none focus:border-orange-500"
                 >
                   <option value="mercadolivre">Mercado Livre</option>
@@ -210,7 +213,7 @@ export function AdminPanel({ categorias, ofertas }: AdminPanelProps) {
                 </label>
                 <select
                   value={status}
-                  onChange={(e) => setStatus(e.target.value as StatusOfertaType)}
+                  onChange={(e) => setStatus(e.target.value as OfertaStatus)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white outline-none focus:border-orange-500"
                 >
                   <option value="novo">Novo</option>
@@ -301,7 +304,9 @@ export function AdminPanel({ categorias, ofertas }: AdminPanelProps) {
                         value={o.status}
                         onChange={(e) =>
                           o.id &&
-                          atualizarStatusOferta(o.id, e.target.value as StatusOfertaType)
+                          atualizarOferta(o.id, {
+                            status: e.target.value as OfertaStatus,
+                          })
                         }
                         className="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-200"
                       >

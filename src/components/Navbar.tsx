@@ -11,7 +11,7 @@ interface NavbarProps {
 }
 
 export function Navbar({ currentView, onNavigate, onOpenLogin }: NavbarProps) {
-  const { isAdmin, logoutAdmin } = useAuth();
+  const { isAdmin, signOut } = useAuth();
 
   return (
     <header className="sticky top-0 z-40 bg-slate-950/85 backdrop-blur-xl border-b border-slate-800/80">
@@ -74,7 +74,7 @@ export function Navbar({ currentView, onNavigate, onOpenLogin }: NavbarProps) {
                 <span>{currentView === "admin" ? "Voltar à Vitrine" : "Painel Admin"}</span>
               </button>
               <button
-                onClick={logoutAdmin}
+                onClick={() => void signOut()}
                 title="Sair do modo administrador"
                 className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-red-400 hover:border-red-500/30 transition"
               >

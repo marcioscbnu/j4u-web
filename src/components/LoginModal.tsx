@@ -11,7 +11,7 @@ interface LoginModalProps {
 }
 
 export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
-  const { loginAdmin } = useAuth();
+  const { signIn } = useAuth();
   const [email, setEmail] = useState("j4umarketplace@gmail.com");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -24,7 +24,7 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
     setError("");
     setLoading(true);
     try {
-      await loginAdmin(email, password);
+      await signIn(email, password);
       setPassword("");
       onSuccess();
     } catch (err: any) {
