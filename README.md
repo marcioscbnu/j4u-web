@@ -1,34 +1,18 @@
-# J4U Marketplace (`v1.0.0` - Supabase Edition)
+# J4UMarketPlace - Pacote Atualizado
 
-Portal de curadoria de ofertas de afiliados (Shopee e Mercado Livre) construído com **Next.js 14 (App Router)**, **React**, **TypeScript**, **Tailwind CSS**, **Supabase (PostgreSQL + Auth + Realtime)** e **Vitest**.
+Este pacote contém os arquivos estruturados e atualizados para o deploy na Vercel com integração Supabase:
 
----
+1. **Autenticação Administrativa Exclusiva (OTP via E-mail):**
+   - Acesso restrito exclusivamente ao e-mail `j4umarketplace@gmail.com`.
+   - Envio e validação de código de verificação (`signInWithOtp` / `verifyOtp`).
+   - Guarda de sessão (`AdminAuthGuard`) bloqueando qualquer acesso não autorizado.
 
-## 1. Instalação Local
+2. **Recuperação e Redefinição de Senha:**
+   - Componente de solicitação de link (`SolicitarRecuperacaoSenha.tsx`).
+   - Página dedicada para criação da nova senha (`src/app/redefinir-senha/page.tsx`).
 
-Após descompactar o projeto, abra o terminal na pasta `j4u-marketplace` e execute:
+3. **Políticas RLS (Row Level Security) para Supabase:**
+   - Script SQL em `supabase/rls_admin_policies.sql` restringindo escrita e operações administrativas exclusivamente ao e-mail autorizado.
 
-```bash
-npm install
-```
-
-Para rodar os testes unitários com **Vitest**:
-
-```bash
-npm run test:run
-```
-
-Para iniciar o servidor de desenvolvimento:
-
-```bash
-npm run dev
-```
-
----
-
-## 2. Configuração do Banco de Dados no Supabase
-
-O script SQL completo para criar as tabelas, regras de segurança e categorias iniciais está salvo dentro deste projeto em:
-`supabase/schema.sql`
-
-Basta copiar todo o conteúdo de `supabase/schema.sql`, colar no **SQL Editor** do painel do Supabase e clicar em **Run**.
+4. **Correção de Tipagem (`FornecedorTipo`):**
+   - Exemplo de importação ajustada para evitar falhas de build no `next build`.
