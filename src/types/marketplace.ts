@@ -1,39 +1,38 @@
-export type FornecedorTipo = 'mercadolivre' | 'shopee';
-export type OfertaStatus = 'novo' | 'destaque' | 'campeao' | 'arquivado';
-export type TemaTela = 'light' | 'system' | 'dark';
-
-export interface Categoria {
+export interface Fornecedor {
   id: string;
   nome: string;
-  icone: string;
-  createdAt?: string;
+  slug: string;
+  url_base?: string | null;
+  cor_badge: string;
+  ativo: boolean;
+  criado_em?: string;
 }
 
 export interface Oferta {
   id: string;
-  categoriaId: string;
-  fornecedor: FornecedorTipo;
-  cta: string;
-  imagemUrl: string;
-  url: string;
-  videoUrl?: string;
-  cadastro: string;
-  expiracao: string;
-  expiracaoIso: string;
-  status: OfertaStatus;
-  cliques: number;
-  createdAt?: string;
+  titulo: string;
+  fornecedor_id: string;
+  preco: number;
+  url_afiliado: string;
+  video_arquivo: string;
+  ativo: boolean;
+  criado_em?: string;
+  fornecedor?: Pick<Fornecedor, "id" | "nome" | "slug" | "cor_badge" | "ativo"> | null;
+}
+
+export interface NovoFornecedorInput {
+  nome: string;
+  slug: string;
+  url_base?: string | null;
+  cor_badge?: string;
+  ativo?: boolean;
 }
 
 export interface NovaOfertaInput {
-  categoriaId: string;
-  fornecedor: FornecedorTipo;
-  cta: string;
-  imagemUrl: string;
-  url: string;
-  videoUrl?: string;
-  expiracaoIso: string;
-  status: OfertaStatus;
+  titulo: string;
+  fornecedor_id: string;
+  preco: number;
+  url_afiliado: string;
+  video_arquivo?: string;
+  ativo?: boolean;
 }
-
-export type AtualizarOfertaInput = Partial<NovaOfertaInput>;

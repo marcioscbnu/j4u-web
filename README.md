@@ -1,18 +1,23 @@
-# J4UMarketPlace - Pacote Atualizado
+# J4UMarketPlace — Versão 2.0
 
-Este pacote contém os arquivos estruturados e atualizados para o deploy na Vercel com integração Supabase:
+Portal de curadoria de ofertas com vídeo local (`/video/video0001.mp4`), tema preto puro (`#000000`), gestão dinâmica de fornecedores no Supabase e painel administrativo protegido por OTP para `j4umarketplace@gmail.com`.
 
-1. **Autenticação Administrativa Exclusiva (OTP via E-mail):**
-   - Acesso restrito exclusivamente ao e-mail `j4umarketplace@gmail.com`.
-   - Envio e validação de código de verificação (`signInWithOtp` / `verifyOtp`).
-   - Guarda de sessão (`AdminAuthGuard`) bloqueando qualquer acesso não autorizado.
+## Estrutura Principal
 
-2. **Recuperação e Redefinição de Senha:**
-   - Componente de solicitação de link (`SolicitarRecuperacaoSenha.tsx`).
-   - Página dedicada para criação da nova senha (`src/app/redefinir-senha/page.tsx`).
+- `supabase/schema.sql`: Tabelas `fornecedores` e `ofertas` com chave estrangeira (`fornecedor_id`, `ON DELETE RESTRICT`) e políticas RLS.
+- `public/video/`: Coloque aqui os arquivos `.mp4` locais (padrão: `video0001.mp4`).
+- `src/app/layout.tsx` e `src/app/page.tsx`: Vitrine pública em fundo preto puro (`#000000`).
+- `src/app/admin/page.tsx`: Área administrativa protegida via OTP (`shouldCreateUser: false`), sem cadastro público (`signup`) e sem `signOut`.
+- `src/components/VitrineJ4U.tsx`: Vitrine com resumo no topo (contagem exata + fornecedor ativo), busca por título sem acentos, filtro por fornecedor, ordenação por preço/recentes e paginação incremental ("Ver mais ofertas").
 
-3. **Políticas RLS (Row Level Security) para Supabase:**
-   - Script SQL em `supabase/rls_admin_policies.sql` restringindo escrita e operações administrativas exclusivamente ao e-mail autorizado.
+## Como executar
 
-4. **Correção de Tipagem (`FornecedorTipo`):**
-   - Exemplo de importação ajustada para evitar falhas de build no `next build`.
+1. Copie `.env.example` para `.env.local` e preencha `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+2. Execute o SQL de `supabase/schema.sql` no SQL Editor do Supabase.
+3. No painel Supabase > Authentication > Providers > Email, habilite o envio de OTP e desative o cadastro público (`Allow new users to sign up = OFF`). Crie manualmente o usuário `j4umarketplace@gmail.com` se ainda não existir.
+4. Coloque `video0001.mp4` dentro de `public/video/`.
+5. Instale as dependências e rode o projeto:
+   ```bash
+   npm install
+   npm run dev
+   ```

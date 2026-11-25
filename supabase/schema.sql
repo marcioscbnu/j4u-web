@@ -1,96 +1,79 @@
--- ============================================================================
--- J4U MARKETPLACE - SCHEMA COMPLETO E IDEMPOTENTE (SUPABASE)
--- ============================================================================
+-- Extensão para UUID
+create extension if not exists "pgcrypto";
 
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
-
-CREATE TABLE IF NOT EXISTS public.categorias (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  nome TEXT NOT NULL UNIQUE,
-  icone TEXT NOT NULL DEFAULT 'tag',
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+-- Tabela de fornecedores dinâmicos
+create table if not exists public.fornecedores (
+  id uuid primary key default gen_random_uuid(),
+  nome text not null,
+  slug text not null unique,
+  url_base text,
+  cor_badge text not null default '#38BDF8',
+  ativo boolean not null default true,
+  criado_em timestamptz not null default now()
 );
 
-CREATE TABLE IF NOT EXISTS public.ofertas (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  categoria_id UUID NOT NULL REFERENCES public.categorias(id) ON DELETE CASCADE,
-  fornecedor TEXT NOT NULL CHECK (fornecedor IN ('mercadolivre', 'shopee')),
-  cta TEXT NOT NULL,
-  imagem_url TEXT NOT NULL,
-  url TEXT NOT NULL,
-  video_url TEXT DEFAULT '',
-  cadastro TEXT NOT NULL,
-  expiracao TEXT NOT NULL,
-  expiracao_iso TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'novo' CHECK (status IN ('novo', 'destaque', 'campeao', 'arquivado')),
-  cliques INTEGER NOT NULL DEFAULT 0,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+-- Tabela de ofertas vinculadas a fornecedores
+create table if not exists public.ofertas (
+  id uuid primary key default gen_random_uuid(),
+  titulo text not null,
+  fornecedor_id uuid not null references public.fornecedores(id) on delete restrict,
+  preco numeric(10,2) not null check (preco > 0),
+  url_afiliado text not null,
+  video_arquivo text not null default 'video0001.mp4',
+  ativo boolean not null default true,
+  criado_em timestamptz not null default now()
 );
 
-ALTER TABLE public.ofertas
-ADD COLUMN IF NOT EXISTS video_url TEXT DEFAULT '';
+create index if not exists idx_ofertas_fornecedor_id on public.ofertas(fornecedor_id);
+create index if not exists idx_ofertas_ativo on public.ofertas(ativo);
+create index if not exists idx_fornecedores_ativo on public.fornecedores(ativo);
 
-CREATE TABLE IF NOT EXISTS public.admin_users (
-  email TEXT PRIMARY KEY,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+-- Habilitar Row Level Security (RLS)
+alter table public.fornecedores enable row level security;
+alter table public.ofertas enable row level security;
+
+alter table public.fornecedores force row level security;
+alter table public.ofertas force row level security;
+
+-- Limpar políticas anteriores caso existam
+drop policy if exists "Leitura publica de fornecedores ativos" on public.fornecedores;
+drop policy if exists "Admin total em fornecedores" on public.fornecedores;
+
+drop policy if exists "Leitura publica de ofertas ativas" on public.ofertas;
+drop policy if exists "Admin total em ofertas" on public.ofertas;
+
+-- Leitura pública apenas para registros ativos
+create policy "Leitura publica de fornecedores ativos"
+on public.fornecedores
+for select
+to anon, authenticated
+using (ativo = true);
+
+create policy "Leitura publica de ofertas ativas"
+on public.ofertas
+for select
+to anon, authenticated
+using (ativo = true);
+
+-- Acesso completo restrito a j4umarketplace@gmail.com
+create policy "Admin total em fornecedores"
+on public.fornecedores
+for all
+to authenticated
+using (
+  lower(coalesce(auth.jwt() ->> 'email', '')) = 'j4umarketplace@gmail.com'
+)
+with check (
+  lower(coalesce(auth.jwt() ->> 'email', '')) = 'j4umarketplace@gmail.com'
 );
 
-INSERT INTO public.admin_users (email)
-VALUES ('j4umarketplace@gmail.com')
-ON CONFLICT (email) DO NOTHING;
-
-CREATE INDEX IF NOT EXISTS idx_ofertas_categoria_id ON public.ofertas(categoria_id);
-CREATE INDEX IF NOT EXISTS idx_ofertas_status ON public.ofertas(status);
-CREATE INDEX IF NOT EXISTS idx_ofertas_expiracao_iso ON public.ofertas(expiracao_iso);
-
-CREATE OR REPLACE FUNCTION public.incrementar_clique_oferta(oferta_id UUID)
-RETURNS VOID
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-BEGIN
-  UPDATE public.ofertas
-  SET cliques = COALESCE(cliques, 0) + 1
-  WHERE id = oferta_id;
-END;
-$$;
-
-ALTER TABLE public.categorias ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.ofertas ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.admin_users ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "categorias_select_public" ON public.categorias;
-CREATE POLICY "categorias_select_public" ON public.categorias
-  FOR SELECT USING (true);
-
-DROP POLICY IF EXISTS "ofertas_select_public" ON public.ofertas;
-CREATE POLICY "ofertas_select_public" ON public.ofertas
-  FOR SELECT USING (true);
-
-DROP POLICY IF EXISTS "admin_users_select_auth" ON public.admin_users;
-CREATE POLICY "admin_users_select_auth" ON public.admin_users
-  FOR SELECT TO authenticated USING (true);
-
-DROP POLICY IF EXISTS "categorias_write_admin" ON public.categorias;
-CREATE POLICY "categorias_write_admin" ON public.categorias
-  FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM public.admin_users WHERE email = auth.jwt() ->> 'email'))
-  WITH CHECK (EXISTS (SELECT 1 FROM public.admin_users WHERE email = auth.jwt() ->> 'email'));
-
-DROP POLICY IF EXISTS "ofertas_write_admin" ON public.ofertas;
-CREATE POLICY "ofertas_write_admin" ON public.ofertas
-  FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM public.admin_users WHERE email = auth.jwt() ->> 'email'))
-  WITH CHECK (EXISTS (SELECT 1 FROM public.admin_users WHERE email = auth.jwt() ->> 'email'));
-
-DO $$
-BEGIN
-  ALTER PUBLICATION supabase_realtime ADD TABLE public.categorias;
-EXCEPTION WHEN duplicate_object THEN NULL;
-END $$;
-
-DO $$
-BEGIN
-  ALTER PUBLICATION supabase_realtime ADD TABLE public.ofertas;
-EXCEPTION WHEN duplicate_object THEN NULL;
-END $$;
+create policy "Admin total em ofertas"
+on public.ofertas
+for all
+to authenticated
+using (
+  lower(coalesce(auth.jwt() ->> 'email', '')) = 'j4umarketplace@gmail.com'
+)
+with check (
+  lower(coalesce(auth.jwt() ->> 'email', '')) = 'j4umarketplace@gmail.com'
+);

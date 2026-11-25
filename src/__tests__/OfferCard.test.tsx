@@ -1,7 +1,7 @@
 import React from "react";
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { OfferCard } from "@/components/OfferCard";
+import OfferCard from "@/components/OfferCard";
 import { Oferta } from "@/types/marketplace";
 
 describe("Componente OfferCard", () => {
@@ -20,24 +20,27 @@ describe("Componente OfferCard", () => {
   };
 
   it("deve renderizar título, fornecedor, categoria, validade e cliques", () => {
-    const onClickMock = vi.fn();
+    const openMock = vi.spyOn(window, "open").mockImplementation(() => null);
     render(
       <OfferCard
         oferta={ofertaMock}
         categoriaNome="Ferramentas"
-        onClickOferta={onClickMock}
       />
     );
 
     expect(screen.getByText("Furadeira Bosch 650W")).toBeInTheDocument();
-    expect(screen.getByText("Mercado Livre")).toBeInTheDocument();
+    expect(screen.getByText(/Mercado Livre/)).toBeInTheDocument();
     expect(screen.getByText("Ferramentas")).toBeInTheDocument();
     expect(screen.getByText(/24\/11\/2026/)).toBeInTheDocument();
-    expect(screen.getByText(/88 interessados/)).toBeInTheDocument();
+    expect(screen.getByText(/88 interesses/)).toBeInTheDocument();
 
-    const botao = screen.getByRole("button", { name: /VER OFERTA/i });
+    const botao = screen.getByRole("button", { name: /QUERO ESTA OFERTA/i });
     fireEvent.click(botao);
-    expect(onClickMock).toHaveBeenCalledTimes(1);
-    expect(onClickMock).toHaveBeenCalledWith(ofertaMock);
+    expect(openMock).toHaveBeenCalledWith(
+      ofertaMock.url,
+      "_blank",
+      "noopener,noreferrer"
+    );
+    openMock.mockRestore();
   });
 });
