@@ -1,23 +1,9 @@
-# J4UMarketPlace — Versão 2.0
+# J4UMarketPlace — Versão 4.4 (Paleta Pastel Suave + Compatibilidade Total)
 
-Portal de curadoria de ofertas com vídeo local (`/video/video0001.mp4`), tema preto puro (`#000000`), gestão dinâmica de fornecedores no Supabase e painel administrativo protegido por OTP para `j4umarketplace@gmail.com`.
+- **Identidade visual em tons pastéis coloridos e suaves:** Fundo creme-rosado (`#FFFDFB`) com degradê delicado entre lavanda, pêssego, menta e azul-céu, cartões brancos com bordas suaves e tipografia de alto conforto visual.
+- **Lógica e integração 100% preservadas:** Compatibilidade total com bancos legados e novos, categorias, fornecedores, foto na íntegra (`object-contain`), mockup interativo de smartphone com teclado QWERTY e `/admin` protegido por OTP exclusivo para `j4umarketplace@gmail.com`.
 
-## Estrutura Principal
+## Atualização Rápida
 
-- `supabase/schema.sql`: Tabelas `fornecedores` e `ofertas` com chave estrangeira (`fornecedor_id`, `ON DELETE RESTRICT`) e políticas RLS.
-- `public/video/`: Coloque aqui os arquivos `.mp4` locais (padrão: `video0001.mp4`).
-- `src/app/layout.tsx` e `src/app/page.tsx`: Vitrine pública em fundo preto puro (`#000000`).
-- `src/app/admin/page.tsx`: Área administrativa protegida via OTP (`shouldCreateUser: false`), sem cadastro público (`signup`) e sem `signOut`.
-- `src/components/VitrineJ4U.tsx`: Vitrine com resumo no topo (contagem exata + fornecedor ativo), busca por título sem acentos, filtro por fornecedor, ordenação por preço/recentes e paginação incremental ("Ver mais ofertas").
-
-## Como executar
-
-1. Copie `.env.example` para `.env.local` e preencha `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
-2. Execute o SQL de `supabase/schema.sql` no SQL Editor do Supabase.
-3. No painel Supabase > Authentication > Providers > Email, habilite o envio de OTP e desative o cadastro público (`Allow new users to sign up = OFF`). Crie manualmente o usuário `j4umarketplace@gmail.com` se ainda não existir.
-4. Coloque `video0001.mp4` dentro de `public/video/`.
-5. Instale as dependências e rode o projeto:
-   ```bash
-   npm install
-   npm run dev
-   ```
+1. Substitua a pasta `src/` (e `tailwind.config.ts`) do seu projeto pelos arquivos deste pacote.
+2. Rode `npm run build` para validar a compilação.

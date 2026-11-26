@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
-
-const ADMIN_EMAIL = "j4umarketplace@gmail.com";
+import { useCallback, useEffect, useState } from "react";
+import {
+  ADMIN_EMAIL,
+  garantirConfiguracaoSupabase,
+  supabase,
+} from "@/lib/supabaseClient";
 
 interface AdminAuthGuardProps {
   children: React.ReactNode;
@@ -12,29 +14,28 @@ interface AdminAuthGuardProps {
 export function AdminAuthGuard({ children }: AdminAuthGuardProps) {
   const [verificandoSessao, setVerificandoSessao] = useState(true);
   const [autorizado, setAutorizado] = useState(false);
-  const [etapa, setEtapa] = useState<"enviar" | "verificar">("enviar");
-  const [codigoOtp, setCodigoOtp] = useState("");
-  const [enviando, setEnviando] = useState(false);
-  const [mensagem, setMensagem] = useState<string | null>(null);
+  const [email, setEmail] = useState(ADMIN_EMAIL);
+  const [senha, setSenha] = useState("");
+  const [entrando, setEntrando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
-  function avaliarUsuario(email?: string | null) {
-    const ok = email?.trim().toLowerCase() === ADMIN_EMAIL;
+  const avaliarUsuario = useCallback((emailSessao?: string | null) => {
+    const ok = emailSessao?.trim().toLowerCase() === ADMIN_EMAIL;
     setAutorizado(ok);
-    if (!ok && email) {
-      setErro("Acesso restrito à conta autorizada do administrador.");
+    if (!ok && emailSessao) {
+      setErro("Acesso restrito ao administrador autorizado.");
     }
-  }
+  }, []);
 
   useEffect(() => {
     let ativo = true;
 
     async function checarSessaoInicial() {
       try {
+        garantirConfiguracaoSupabase();
         const { data, error } = await supabase.auth.getSession();
         if (!ativo) return;
         if (error) {
-          setErro(error.message);
           setAutorizado(false);
         } else {
           avaliarUsuario(data.session?.user?.email);
@@ -63,68 +64,52 @@ export function AdminAuthGuard({ children }: AdminAuthGuardProps) {
       ativo = false;
       listener.subscription.unsubscribe();
     };
-  }, []);
+  }, [avaliarUsuario]);
 
-  async function handleEnviarOtp(e: React.FormEvent) {
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
-    setEnviando(true);
     setErro(null);
-    setMensagem(null);
 
-    try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email: ADMIN_EMAIL,
-        options: {
-          shouldCreateUser: false,
-        },
-      });
-
-      if (error) throw error;
-
-      setEtapa("verificar");
-      setMensagem(
-        `Código de verificação enviado para ${ADMIN_EMAIL}. Confira sua caixa de entrada.`
-      );
-    } catch (err: unknown) {
-      setErro(
-        err instanceof Error
-          ? err.message
-          : "Não foi possível enviar o código OTP."
-      );
-    } finally {
-      setEnviando(false);
+    const emailLimpo = email.trim().toLowerCase();
+    if (emailLimpo !== ADMIN_EMAIL) {
+      setErro(`Somente ${ADMIN_EMAIL} tem acesso administrativo.`);
+      return;
     }
-  }
 
-  async function handleVerificarOtp(e: React.FormEvent) {
-    e.preventDefault();
-    setEnviando(true);
-    setErro(null);
-    setMensagem(null);
+    if (!senha.trim()) {
+      setErro("Informe a senha do administrador.");
+      return;
+    }
 
+    setEntrando(true);
     try {
-      const { data, error } = await supabase.auth.verifyOtp({
-        email: ADMIN_EMAIL,
-        token: codigoOtp.trim(),
-        type: "email",
+      garantirConfiguracaoSupabase();
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: emailLimpo,
+        password: senha,
       });
 
       if (error) throw error;
 
       avaliarUsuario(data.user?.email ?? data.session?.user?.email);
+      setSenha("");
     } catch (err: unknown) {
-      setErro(
-        err instanceof Error ? err.message : "Código OTP inválido ou expirado."
-      );
+      const msg =
+        err instanceof Error ? err.message : "Falha ao autenticar no painel.";
+      if (msg.toLowerCase().includes("invalid login credentials")) {
+        setErro("Usuário ou senha inválidos.");
+      } else {
+        setErro(msg);
+      }
     } finally {
-      setEnviando(false);
+      setEntrando(false);
     }
   }
 
   if (verificandoSessao) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center p-6">
-        <p className="text-sm text-zinc-400">
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <p className="text-sm font-medium text-slate-600">
           Verificando acesso administrativo...
         </p>
       </div>
@@ -136,83 +121,60 @@ export function AdminAuthGuard({ children }: AdminAuthGuardProps) {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
-      <div className="w-full max-w-md rounded-xl bg-zinc-950 border border-zinc-800 p-6 space-y-5">
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="w-full max-w-md rounded-3xl bg-white/95 backdrop-blur-xs border border-violet-200 p-7 shadow-md space-y-5">
         <div className="space-y-1.5">
-          <h1 className="text-xl font-bold text-white">
+          <span className="inline-block text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-violet-100 text-violet-900 border border-violet-200">
+            Administração
+          </span>
+          <h1 className="text-xl font-bold text-slate-800">
             Acesso Restrito — J4UMarketPlace
           </h1>
-          <p className="text-sm text-zinc-400">
-            Autenticação via código OTP para{" "}
-            <span className="text-zinc-200 font-medium">{ADMIN_EMAIL}</span>.
+          <p className="text-sm text-slate-600">
+            Entre com o usuário e senha do administrador.
           </p>
         </div>
 
-        {etapa === "enviar" ? (
-          <form onSubmit={handleEnviarOtp} className="space-y-4">
-            <div>
-              <label className="block text-xs uppercase tracking-wider text-zinc-400 mb-1.5">
-                E-mail autorizado
-              </label>
-              <input
-                type="email"
-                readOnly
-                value={ADMIN_EMAIL}
-                className="w-full px-3.5 py-2.5 rounded-lg bg-black border border-zinc-800 text-zinc-200 text-sm"
-              />
-            </div>
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+              Usuário (E-mail)
+            </label>
+            <input
+              type="email"
+              required
+              autoComplete="username"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-xl bg-sky-50/40 border border-sky-200 text-slate-800 text-sm focus:outline-none focus:bg-white focus:border-violet-400"
+            />
+          </div>
 
-            <button
-              type="submit"
-              disabled={enviando}
-              className="w-full py-2.5 px-4 rounded-lg bg-blue-600 hover:bg-blue-500 font-semibold text-sm text-white disabled:opacity-50"
-            >
-              {enviando ? "Enviando código..." : "Enviar código OTP"}
-            </button>
-          </form>
-        ) : (
-          <form onSubmit={handleVerificarOtp} className="space-y-4">
-            <div>
-              <label className="block text-xs uppercase tracking-wider text-zinc-400 mb-1.5">
-                Código OTP recebido por e-mail
-              </label>
-              <input
-                type="text"
-                inputMode="numeric"
-                required
-                value={codigoOtp}
-                onChange={(e) => setCodigoOtp(e.target.value)}
-                placeholder="Digite o código"
-                className="w-full px-3.5 py-2.5 rounded-lg bg-black border border-zinc-700 text-white text-sm focus:outline-none focus:border-blue-500"
-              />
-            </div>
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+              Senha
+            </label>
+            <input
+              type="password"
+              required
+              autoComplete="current-password"
+              value={senha}
+              onChange={(e) => setSenha(e.target.value)}
+              placeholder="Digite sua senha"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-rose-50/40 border border-rose-200 text-slate-800 text-sm focus:outline-none focus:bg-white focus:border-violet-400"
+            />
+          </div>
 
-            <div className="flex gap-2.5">
-              <button
-                type="submit"
-                disabled={enviando}
-                className="flex-1 py-2.5 px-4 rounded-lg bg-blue-600 hover:bg-blue-500 font-semibold text-sm text-white disabled:opacity-50"
-              >
-                {enviando ? "Validando..." : "Confirmar código"}
-              </button>
+          <button
+            type="submit"
+            disabled={entrando}
+            className="w-full py-2.5 px-4 rounded-xl bg-sky-200 hover:bg-sky-300/90 border border-sky-300 font-bold text-sm text-sky-950 disabled:opacity-50 transition"
+          >
+            {entrando ? "Entrando..." : "Entrar no Painel"}
+          </button>
+        </form>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setEtapa("enviar");
-                  setCodigoOtp("");
-                  setErro(null);
-                }}
-                className="px-3.5 py-2.5 rounded-lg border border-zinc-700 text-xs text-zinc-300 hover:bg-zinc-900"
-              >
-                Reenviar
-              </button>
-            </div>
-          </form>
-        )}
-
-        {mensagem && <p className="text-sm text-emerald-400">{mensagem}</p>}
-        {erro && <p className="text-sm text-red-400">{erro}</p>}
+        {erro && <p className="text-sm font-medium text-rose-700">{erro}</p>}
       </div>
     </div>
   );

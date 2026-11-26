@@ -1,0 +1,56 @@
+[
+  {
+    "id": "02b92d10-0177-4d8c-806b-f0849b9fdefb",
+    "nome": "Shopee",
+    "slug": "shopee",
+    "url_base": "https://shopee.com.br",
+    "cor_badge": "#EE4D2D",
+    "ativo": true,
+    "criado_em": "2026-11-25 11:06:44.420792+00"
+  },
+  {
+    "id": "03faaaac-a82b-4683-89e9-1ae3555dc6a8",
+    "nome": "Amazon",
+    "slug": "amazon",
+    "url_base": "https://www.amazon.com.br",
+    "cor_badge": "#FF9900",
+    "ativo": true,
+    "criado_em": "2026-11-25 11:06:44.420792+00"
+  },
+  {
+    "id": "90a09f26-3776-4630-bf19-d0212ff16269",
+    "nome": "Beleza na Web",
+    "slug": "beleza-na-web",
+    "url_base": "https://www.belezanaweb.com.br",
+    "cor_badge": "#9B51E0",
+    "ativo": true,
+    "criado_em": "2026-11-25 11:06:44.420792+00"
+  },
+  {
+    "id": "f56de1f6-f440-408b-8ec8-1ab1936f1469",
+    "nome": "Mercado Livre",
+    "slug": "mercado-livre",
+    "url_base": "https://www.mercadolivre.com.br",
+    "cor_badge": "#FFE600",
+    "ativo": true,
+    "criado_em": "2026-11-25 11:06:44.420792+00"
+  },
+  {
+    "id": "f0e1f6f6-5494-496e-9abf-f368be26c09f",
+    "nome": "Diversos",
+    "slug": "diversos",
+    "url_base": null,
+    "cor_badge": "#06f9a8",
+    "ativo": true,
+    "criado_em": "2026-11-25 14:03:22.294903+00"
+  },
+  {
+    "id": "67d9b5f6-285e-4975-9779-23f7481dbd1f",
+    "nome": "Ohr Luz e Sonhos",
+    "slug": "ohr-luz-e-sonhos",
+    "url_base": "https://app.ailou.com.br/loja/ohrluzesonhos",
+    "cor_badge": "#e995de",
+    "ativo": true,
+    "criado_em": "2026-11-25 14:05:06.631861+00"
+  }
+]
