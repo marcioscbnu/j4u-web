@@ -108,8 +108,8 @@ export function AdminAuthGuard({ children }: AdminAuthGuardProps) {
 
   if (verificandoSessao) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6">
-        <p className="text-sm font-medium text-slate-600">
+      <div className="min-h-screen bg-[#09090b] flex items-center justify-center p-6">
+        <p className="text-sm font-medium text-zinc-300">
           Verificando acesso administrativo...
         </p>
       </div>
@@ -121,23 +121,23 @@ export function AdminAuthGuard({ children }: AdminAuthGuardProps) {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="w-full max-w-md rounded-3xl bg-white/95 backdrop-blur-xs border border-violet-200 p-7 shadow-md space-y-5">
+    <div className="min-h-screen bg-[#09090b] flex items-center justify-center p-4">
+      <div className="w-full max-w-md rounded-3xl bg-[#141418] border border-amber-500/40 p-6 sm:p-7 shadow-2xl shadow-black/70 space-y-5">
         <div className="space-y-1.5">
-          <span className="inline-block text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-violet-100 text-violet-900 border border-violet-200">
-            Administração
+          <span className="inline-block text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/40">
+            Administração • Black Friday v5.0.2
           </span>
-          <h1 className="text-xl font-bold text-slate-800">
+          <h1 className="text-xl font-bold text-zinc-100">
             Acesso Restrito — J4UMarketPlace
           </h1>
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-zinc-400">
             Entre com o usuário e senha do administrador.
           </p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">
               Usuário (E-mail)
             </label>
             <input
@@ -146,12 +146,12 @@ export function AdminAuthGuard({ children }: AdminAuthGuardProps) {
               autoComplete="username"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-sky-50/40 border border-sky-200 text-slate-800 text-sm focus:outline-none focus:bg-white focus:border-violet-400"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-zinc-700 text-zinc-100 text-sm focus:outline-none focus:border-amber-400"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">
               Senha
             </label>
             <input
@@ -161,20 +161,20 @@ export function AdminAuthGuard({ children }: AdminAuthGuardProps) {
               value={senha}
               onChange={(e) => setSenha(e.target.value)}
               placeholder="Digite sua senha"
-              className="w-full px-3.5 py-2.5 rounded-xl bg-rose-50/40 border border-rose-200 text-slate-800 text-sm focus:outline-none focus:bg-white focus:border-violet-400"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-zinc-700 text-zinc-100 text-sm focus:outline-none focus:border-amber-400"
             />
           </div>
 
           <button
             type="submit"
             disabled={entrando}
-            className="w-full py-2.5 px-4 rounded-xl bg-sky-200 hover:bg-sky-300/90 border border-sky-300 font-bold text-sm text-sky-950 disabled:opacity-50 transition"
+            className="w-full py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 font-extrabold text-sm text-zinc-950 disabled:opacity-50 transition"
           >
             {entrando ? "Entrando..." : "Entrar no Painel"}
           </button>
         </form>
 
-        {erro && <p className="text-sm font-medium text-rose-700">{erro}</p>}
+        {erro && <p className="text-sm font-medium text-rose-400">{erro}</p>}
       </div>
     </div>
   );

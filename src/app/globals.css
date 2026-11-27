@@ -2,8 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --bg-onix: #09090b;
+  --surface-grafite: #121216;
+  --surface-card: #18181d;
+  --texto-prata: #f4f4f5;
+  --texto-prata-suave: #a1a1aa;
+  --ouro: #f59e0b;
+  --amarelo: #facc15;
+  --verde-acao: #10b981;
+}
+
 html,
 body {
-  background: linear-gradient(135deg, #fdf6f9 0%, #f4f9ff 48%, #f4fbf7 100%);
-  color: #334155;
+  background-color: var(--bg-onix);
+  color: var(--texto-prata);
+  overflow-x: hidden;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+::selection {
+  background-color: rgba(250, 204, 21, 0.28);
+  color: #fef08a;
 }

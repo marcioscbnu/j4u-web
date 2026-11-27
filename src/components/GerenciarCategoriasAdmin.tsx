@@ -1,51 +1,58 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Categoria } from "@/types/marketplace";
-import {
-  atualizarCategoria,
-  criarCategoria,
-  excluirCategoria,
-  listarCategorias,
-} from "@/services/categoriaService";
+import { supabase } from "@/lib/supabaseClient";
 
-function gerarSlug(texto: string): string {
-  return texto
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+export interface CategoriaAdmin {
+  id: string;
+  nome: string;
+  slug?: string | null;
+  icone?: string | null;
+  ordem?: number | null;
+  ativa?: boolean | null;
 }
 
 interface GerenciarCategoriasAdminProps {
   onCategoriasAlteradas?: () => void;
 }
 
+function gerarSlug(texto: string) {
+  return texto
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 export function GerenciarCategoriasAdmin({
   onCategoriasAlteradas,
 }: GerenciarCategoriasAdminProps) {
-  const [categorias, setCategorias] = useState<Categoria[]>([]);
-  const [editandoId, setEditandoId] = useState<string | null>(null);
-  const [nome, setNome] = useState("");
-  const [slug, setSlug] = useState("");
-  const [icone, setIcone] = useState("🏷️");
-  const [ativo, setAtivo] = useState(true);
-
+  const [categorias, setCategorias] = useState<CategoriaAdmin[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
+
+  const [editandoId, setEditandoId] = useState<string | null>(null);
+  const [nome, setNome] = useState("");
+  const [icone, setIcone] = useState("🏷️");
+  const [ativa, setAtiva] = useState(true);
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
 
-  const carregar = useCallback(async () => {
+  const carregarCategorias = useCallback(async () => {
     setCarregando(true);
     setErro(null);
     try {
-      const lista = await listarCategorias();
-      setCategorias(lista);
+      const { data, error } = await supabase
+        .from("categorias")
+        .select("*")
+        .order("nome", { ascending: true });
+
+      if (error) throw error;
+      setCategorias((data || []) as CategoriaAdmin[]);
     } catch (err: unknown) {
       setErro(
-        err instanceof Error ? err.message : "Erro ao listar categorias.",
+        err instanceof Error ? err.message : "Erro ao carregar categorias."
       );
     } finally {
       setCarregando(false);
@@ -53,25 +60,23 @@ export function GerenciarCategoriasAdmin({
   }, []);
 
   useEffect(() => {
-    carregar();
-  }, [carregar]);
+    carregarCategorias();
+  }, [carregarCategorias]);
 
   function limparFormulario() {
     setEditandoId(null);
     setNome("");
-    setSlug("");
     setIcone("🏷️");
-    setAtivo(true);
+    setAtiva(true);
   }
 
-  function iniciarEdicao(c: Categoria) {
-    setEditandoId(c.id);
-    setNome(c.nome);
-    setSlug(c.slug);
-    setIcone(c.icone || "🏷️");
-    setAtivo(c.ativo);
-    setMensagem(null);
+  function iniciarEdicao(cat: CategoriaAdmin) {
     setErro(null);
+    setMensagem(null);
+    setEditandoId(cat.id);
+    setNome(cat.nome || "");
+    setIcone(cat.icone || "🏷️");
+    setAtiva(cat.ativa !== false);
   }
 
   async function handleSalvar(e: React.FormEvent) {
@@ -79,242 +84,229 @@ export function GerenciarCategoriasAdmin({
     setErro(null);
     setMensagem(null);
 
-    if (!nome.trim()) {
+    const nomeLimpo = nome.trim();
+    if (!nomeLimpo) {
       setErro("Informe o nome da categoria.");
-      return;
-    }
-
-    const slugFinal = gerarSlug(slug || nome);
-    if (!slugFinal) {
-      setErro("Informe um slug válido.");
       return;
     }
 
     setSalvando(true);
     try {
       const payload = {
-        nome: nome.trim(),
-        slug: slugFinal,
-        icone: icone.trim() || "🏷️",
-        ativo,
+        nome: nomeLimpo,
+        slug: gerarSlug(nomeLimpo),
+        icone: (icone || "🏷️").trim(),
+        ativa,
       };
 
       if (editandoId) {
-        await atualizarCategoria(editandoId, payload);
+        const { error } = await supabase
+          .from("categorias")
+          .update(payload)
+          .eq("id", editandoId);
+        if (error) throw error;
         setMensagem("Categoria atualizada com sucesso.");
       } else {
-        await criarCategoria(payload);
-        setMensagem("Categoria cadastrada com sucesso.");
+        const { error } = await supabase.from("categorias").insert(payload);
+        if (error) throw error;
+        setMensagem("Categoria incluída com sucesso.");
       }
 
       limparFormulario();
-      await carregar();
+      await carregarCategorias();
       onCategoriasAlteradas?.();
     } catch (err: unknown) {
-      setErro(err instanceof Error ? err.message : "Erro ao salvar categoria.");
+      setErro(
+        err instanceof Error ? err.message : "Erro ao salvar categoria."
+      );
     } finally {
       setSalvando(false);
     }
   }
 
-  async function handleAlternarStatus(c: Categoria) {
+  async function alternarStatus(cat: CategoriaAdmin) {
     setErro(null);
     setMensagem(null);
     try {
-      await atualizarCategoria(c.id, { ativo: !c.ativo });
-      setMensagem(
-        `Categoria "${c.nome}" ${!c.ativo ? "ativada" : "desativada"}.`,
-      );
-      await carregar();
-      onCategoriasAlteradas?.();
-    } catch (err: unknown) {
-      setErro(err instanceof Error ? err.message : "Erro ao alterar status.");
-    }
-  }
-
-  async function handleExcluir(c: Categoria) {
-    const ok = window.confirm(
-      `Excluir a categoria "${c.nome}"? As ofertas vinculadas ficarão sem categoria até serem reclassificadas.`,
-    );
-    if (!ok) return;
-
-    setErro(null);
-    setMensagem(null);
-    try {
-      await excluirCategoria(c.id);
-      if (editandoId === c.id) limparFormulario();
-      setMensagem("Categoria excluída.");
-      await carregar();
+      const novoStatus = cat.ativa === false ? true : false;
+      const { error } = await supabase
+        .from("categorias")
+        .update({ ativa: novoStatus })
+        .eq("id", cat.id);
+      if (error) throw error;
+      await carregarCategorias();
       onCategoriasAlteradas?.();
     } catch (err: unknown) {
       setErro(
-        err instanceof Error ? err.message : "Erro ao excluir categoria.",
+        err instanceof Error ? err.message : "Erro ao alterar status."
       );
     }
   }
 
-  function alternarStatus(categoria: Categoria): void {
-    throw new Error("Function not implemented.");
+  async function excluirCategoria(cat: CategoriaAdmin) {
+    setErro(null);
+    setMensagem(null);
+    try {
+      const { error } = await supabase
+        .from("categorias")
+        .delete()
+        .eq("id", cat.id);
+      if (error) throw error;
+      if (editandoId === cat.id) limparFormulario();
+      setMensagem("Categoria removida.");
+      await carregarCategorias();
+      onCategoriasAlteradas?.();
+    } catch (err: unknown) {
+      setErro(
+        err instanceof Error ? err.message : "Erro ao excluir categoria."
+      );
+    }
   }
 
   return (
-    <section className="rounded-2xl bg-white/90 backdrop-blur-xs border border-emerald-200/80 p-6 shadow-xs space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-100 pb-4">
+    <section className="rounded-2xl bg-[#141418] border border-zinc-800 p-5 sm:p-6 shadow-xl shadow-black/50 space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800 pb-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-800">
-            {editandoId ? "Editar Categoria" : "Categorias de Produtos"}
+          <span className="text-[11px] font-extrabold uppercase tracking-wider text-amber-400">
+            Taxonomia
+          </span>
+          <h2 className="text-lg sm:text-xl font-bold text-zinc-100">
+            Categorias da Vitrine
           </h2>
-          <p className="text-xs text-slate-500">
-            Organize as ofertas do portal por departamento (Ferramentas, Beleza,
-            Perfumaria, Casa, Eletrônicos etc.).
-          </p>
         </div>
-
-        {editandoId && (
-          <button
-            type="button"
-            onClick={limparFormulario}
-            className="px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-700 hover:bg-slate-100"
-          >
-            Cancelar edição
-          </button>
-        )}
+        <span className="text-xs font-bold text-zinc-400">
+          Total: {categorias.length}
+        </span>
       </div>
 
       <form
         onSubmit={handleSalvar}
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end"
+        className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end"
       >
-        <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+        <div className="sm:col-span-2">
+          <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-1">
+            Ícone
+          </label>
+          <input
+            type="text"
+            value={icone}
+            onChange={(e) => setIcone(e.target.value)}
+            className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-700 text-zinc-100 text-sm focus:outline-none focus:border-amber-400"
+          />
+        </div>
+
+        <div className="sm:col-span-6">
+          <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-1">
             Nome da Categoria
           </label>
           <input
             type="text"
-            required
             value={nome}
-            onChange={(e) => {
-              setNome(e.target.value);
-              if (!editandoId) setSlug(gerarSlug(e.target.value));
-            }}
-            placeholder="Ex.: Ferramentas"
-            className="w-full px-3 py-2 rounded-xl bg-emerald-50/40 border border-emerald-200 text-slate-800 text-sm focus:outline-none focus:bg-white focus:border-emerald-400"
+            onChange={(e) => setNome(e.target.value)}
+            placeholder="Ex.: Eletrônicos, Casa & Cozinha..."
+            className="w-full px-3.5 py-2 rounded-xl bg-zinc-900 border border-zinc-700 text-zinc-100 text-sm placeholder:text-zinc-500 focus:outline-none focus:border-amber-400"
           />
         </div>
 
-        <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-            Slug
-          </label>
+        <div className="sm:col-span-2 flex items-center gap-2 py-2">
           <input
-            type="text"
-            required
-            value={slug}
-            onChange={(e) => setSlug(gerarSlug(e.target.value))}
-            placeholder="ferramentas"
-            className="w-full px-3 py-2 rounded-xl bg-emerald-50/40 border border-emerald-200 text-slate-800 text-sm focus:outline-none focus:bg-white focus:border-emerald-400"
+            id="cat-ativa"
+            type="checkbox"
+            checked={ativa}
+            onChange={(e) => setAtiva(e.target.checked)}
+            className="h-4 w-4 accent-emerald-500 rounded"
           />
-        </div>
-
-        <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-            Ícone / Emoji
-          </label>
-          <input
-            type="text"
-            maxLength={8}
-            value={icone}
-            onChange={(e) => setIcone(e.target.value)}
-            placeholder="🛠️"
-            className="w-full px-3 py-2 rounded-xl bg-emerald-50/40 border border-emerald-200 text-slate-800 text-sm focus:outline-none focus:bg-white focus:border-emerald-400"
-          />
-        </div>
-
-        <div className="flex items-center justify-between sm:justify-end gap-3">
-          <label className="inline-flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={ativo}
-              onChange={(e) => setAtivo(e.target.checked)}
-              className="h-4 w-4 rounded border-emerald-300 text-emerald-600"
-            />
+          <label
+            htmlFor="cat-ativa"
+            className="text-xs font-bold text-zinc-200"
+          >
             Ativa
           </label>
+        </div>
 
+        <div className="sm:col-span-2 flex gap-2">
           <button
             type="submit"
             disabled={salvando}
-            className="px-4 py-2 rounded-xl bg-emerald-200 hover:bg-emerald-300/90 border border-emerald-300 font-bold text-sm text-emerald-950 disabled:opacity-50 transition"
+            className="w-full py-2 px-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-extrabold text-xs uppercase tracking-wide disabled:opacity-50 transition"
           >
-            {salvando ? "Salvando..." : editandoId ? "Atualizar" : "Adicionar"}
+            {salvando ? "Salvando..." : editandoId ? "Salvar" : "Adicionar"}
           </button>
+          {editandoId && (
+            <button
+              type="button"
+              onClick={limparFormulario}
+              className="py-2 px-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-bold transition"
+            >
+              Cancelar
+            </button>
+          )}
         </div>
       </form>
 
+      {erro && <p className="text-sm font-semibold text-rose-400">{erro}</p>}
       {mensagem && (
-        <p className="text-sm font-medium text-emerald-700">{mensagem}</p>
+        <p className="text-sm font-semibold text-emerald-400">{mensagem}</p>
       )}
-      {erro && <p className="text-sm font-medium text-rose-700">{erro}</p>}
 
       {carregando ? (
-        <p className="text-sm text-slate-500">Carregando categorias...</p>
+        <p className="text-sm text-zinc-400">Carregando categorias...</p>
       ) : categorias.length === 0 ? (
-        <p className="text-sm text-slate-500">
-          Nenhuma categoria cadastrada. Cadastre acima.
-        </p>
+        <p className="text-sm text-zinc-400">Nenhuma categoria cadastrada.</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {categorias.map((categoria) => (
-            <div
-              key={categoria.id}
-              className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-2xl bg-emerald-50/40 border border-emerald-200/90"
-            >
-              {/* Lado esquerdo: Ícone + Nome da categoria */}
-              <div className="flex items-center gap-2 min-w-0 px-3 py-1 rounded-full bg-white border border-emerald-200/80 shadow-2xs">
-                <span className="shrink-0">{categoria.icone || "🏷️"}</span>
-                <span className="text-xs font-bold text-slate-800 truncate">
-                  {categoria.nome}
-                </span>
+          {categorias.map((cat) => {
+            const estaAtiva = cat.ativa !== false;
+            return (
+              <div
+                key={cat.id}
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 px-4 py-3 rounded-xl bg-zinc-900/90 border border-zinc-800 hover:border-amber-500/40 transition"
+              >
+                <div className="flex items-center gap-2 min-w-0 px-3 py-1 rounded-full bg-zinc-950 border border-zinc-700/80 self-start sm:self-auto max-w-full">
+                  <span className="shrink-0">{cat.icone || "🏷️"}</span>
+                  <span className="text-xs font-bold text-zinc-100 truncate">
+                    {cat.nome}
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3 text-xs">
+                  <span
+                    className={
+                      estaAtiva
+                        ? "font-bold text-emerald-400"
+                        : "font-semibold text-zinc-500"
+                    }
+                  >
+                    {estaAtiva ? "Ativa" : "Inativa"}
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => iniciarEdicao(cat)}
+                    className="font-semibold text-amber-300 hover:text-amber-200 transition"
+                  >
+                    Editar
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => alternarStatus(cat)}
+                    className="font-semibold text-zinc-300 hover:text-white transition"
+                  >
+                    {estaAtiva ? "Desativar" : "Ativar"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => excluirCategoria(cat)}
+                    className="font-semibold text-rose-400 hover:text-rose-300 transition"
+                  >
+                    Excluir
+                  </button>
+                </div>
               </div>
-
-              {/* Lado direito: Status e ações alinhados verticalmente */}
-              <div className="flex items-center gap-3 shrink-0 text-xs">
-                <span
-                  className={
-                    categoria.ativo
-                      ? "font-medium text-slate-600"
-                      : "font-medium text-slate-400"
-                  }
-                >
-                  {categoria.ativo ? "Ativa" : "Inativa"}
-                </span>
-
-                <button
-                  type="button"
-                  onClick={() => iniciarEdicao(categoria)}
-                  className="font-semibold text-slate-700 hover:text-slate-950 transition"
-                >
-                  Editar
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => alternarStatus(categoria)}
-                  className="font-semibold text-sky-700 hover:text-sky-900 transition"
-                >
-                  {categoria.ativo ? "Desativar" : "Ativar"}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleExcluir(categoria)}
-                  className="font-semibold text-rose-600 hover:text-rose-800 transition"
-                >
-                  Excluir
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </section>

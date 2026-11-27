@@ -17,29 +17,29 @@ export default function AdminPage() {
 
   return (
     <AdminAuthGuard>
-      <main className="min-h-screen px-4 py-8 max-w-6xl mx-auto space-y-8">
-        <header className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-white/85 backdrop-blur-sm border border-violet-200/80 p-6 shadow-sm">
-          <div className="space-y-1">
-            <span className="inline-block text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-violet-100 text-violet-800 border border-violet-200">
-              Área Administrativa
+      <main className="min-h-screen w-full overflow-x-hidden bg-[#09090b] text-zinc-100 px-3 sm:px-4 py-6 sm:py-8 max-w-6xl mx-auto space-y-6 sm:space-y-8">
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl bg-[#141418] border border-amber-500/40 p-5 sm:p-6 shadow-xl shadow-black/50">
+          <div className="space-y-1 min-w-0">
+            <span className="inline-block text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/40">
+              Área Administrativa • Black Friday v5.0.2
             </span>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-800">
+            <h1 className="text-xl sm:text-3xl font-bold tracking-tight text-zinc-100">
               Painel Administrativo — J4UMarketPlace
             </h1>
-            <p className="text-sm text-slate-600">
-              Gestão de categorias, fornecedores, fotos na íntegra e vídeos
-              locais (
-              <code className="px-1.5 py-0.5 rounded bg-amber-100/80 text-amber-900 font-medium">
+            <p className="text-xs sm:text-sm text-zinc-400">
+              Edição completa de produtos, controle de expiração, faxina por
+              categoria/data e gestão de vídeos locais (
+              <code className="px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-700 text-yellow-300 font-medium">
                 /video/video0001.mp4
               </code>
-              ) com legendas.
+              ).
             </p>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
             <Link
               href="/"
-              className="px-4 py-2.5 rounded-xl border border-sky-200 bg-sky-100 hover:bg-sky-200/80 text-xs font-bold text-sky-900 shadow-xs transition"
+              className="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-xs font-extrabold text-zinc-950 shadow-xs transition"
             >
               Ver Vitrine Pública →
             </Link>
@@ -47,7 +47,7 @@ export default function AdminPage() {
             <button
               type="button"
               onClick={handleSair}
-              className="px-4 py-2.5 rounded-xl border border-rose-200 bg-rose-100 hover:bg-rose-200/80 text-xs font-bold text-rose-900 shadow-xs transition"
+              className="px-4 py-2.5 rounded-xl border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 text-xs font-bold text-zinc-200 transition"
             >
               Sair
             </button>

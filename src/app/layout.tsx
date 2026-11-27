@@ -1,10 +1,15 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "J4UMarketPlace — Vitrine Inteligente de Ofertas",
+  title: "J4UMarketPlace — Curadoria Oficial & Ofertas Black Friday",
   description:
-    "Curadoria diária por categorias e parceiros com visualização completa do produto e demonstração interativa em vídeo.",
+    "Portal curado de ofertas selecionadas nos melhores fornecedores com revisão real em foto e vídeo.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({
@@ -13,8 +18,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR">
-      <body className="min-h-screen bg-gradient-to-br from-rose-50/70 via-sky-50/70 to-emerald-50/70 text-slate-700 antialiased selection:bg-violet-200 selection:text-violet-950">
+    <html lang="pt-BR" className="dark">
+      <body className="min-h-screen w-full overflow-x-hidden bg-[#09090b] text-zinc-100 antialiased">
         {children}
       </body>
     </html>
