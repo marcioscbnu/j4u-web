@@ -1,0 +1,9 @@
+J4UMarketPlace v5.0.2 - Pacote de Correcao (TS2554 + globals.css)
+
+1. Copie src/app/globals.css para a pasta src/app/ do seu projeto.
+2. No arquivo src/lib/supabaseClient.ts, inclua as exportacoes extrairColunaAusenteNoSchema
+   e isErroColunaOuTabelaAusente (presentes em src/lib/supabaseClient.patch.ts) e certifique-se
+   de que a funcao chamada na linha 17 de src/services/categoriaService.ts e na linha 118 de
+   src/services/vitrineService.ts aceite parametros opcionais (ex.: arg2?: unknown) ou remova
+   o segundo argumento excedente nas chamadas.
+3. Rode: npm run build

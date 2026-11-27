@@ -3,25 +3,86 @@
 @tailwind utilities;
 
 :root {
-  --bg-onix: #09090b;
-  --surface-grafite: #121216;
-  --surface-card: #18181d;
-  --texto-prata: #f4f4f5;
-  --texto-prata-suave: #a1a1aa;
-  --ouro: #f59e0b;
-  --amarelo: #facc15;
-  --verde-acao: #10b981;
+  --bg-onyx: #070709;
+  --bg-surface: #111115;
+  --bg-surface-elevated: #18181f;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-gold: rgba(250, 204, 21, 0.35);
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --accent-gold: #facc15;
+  --accent-cta: #16a34a;
+  --accent-cta-hover: #15803d;
 }
 
-html,
-body {
-  background-color: var(--bg-onix);
-  color: var(--texto-prata);
-  overflow-x: hidden;
-  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    background-color: var(--bg-onyx);
+    color: var(--text-primary);
+  }
+
+  body {
+    background-color: var(--bg-onyx);
+    color: var(--text-primary);
+    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+      Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  input,
+  select,
+  textarea {
+    color-scheme: dark;
+  }
 }
 
-::selection {
-  background-color: rgba(250, 204, 21, 0.28);
-  color: #fef08a;
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0b0b0e;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #27272f;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3f3f4c;
+}
+
+.j4u-card-onyx {
+  background: linear-gradient(180deg, #131318 0%, #0d0d11 100%);
+  border: 1px solid var(--border-subtle);
+}
+
+.j4u-gold-badge {
+  background: rgba(250, 204, 21, 0.12);
+  border: 1px solid var(--border-gold);
+  color: #fde047;
+}
+
+.j4u-price-highlight {
+  color: #facc15;
+  font-variant-numeric: tabular-nums;
+}
+
+.j4u-btn-cta {
+  background-color: #16a34a;
+  color: #ffffff;
+  transition: background-color 150ms ease, transform 150ms ease;
+}
+
+.j4u-btn-cta:hover {
+  background-color: #15803d;
+}
+
+.j4u-btn-cta:active {
+  transform: scale(0.99);
 }

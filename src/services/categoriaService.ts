@@ -14,7 +14,7 @@ export async function listarCategorias(): Promise<Categoria[]> {
     .order("nome", { ascending: true });
 
   if (error) {
-    if (isErroColunaOuTabelaAusente(error, "categorias")) {
+    if (isErroColunaOuTabelaAusente(error)) {
       return [];
     }
     throw new Error(error.message);
